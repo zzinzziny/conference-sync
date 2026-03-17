@@ -1,0 +1,26 @@
+name: Sync AI Conferences to Notion
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install notion-client pyyaml requests pytz python-dotenv
+
+      - name: Run sync
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          CONFERENCES_DB_ID: ${{ secrets.CONFERENCES_DB_ID }}
+        run: python sync.py
