@@ -104,7 +104,15 @@ def get_existing_ids():
         kwargs = {"database_id": CONFERENCES_DB_ID, "page_size": 100}
         if cursor:
             kwargs["start_cursor"] = cursor
-        resp = notion.databases.query(**kwargs)
+
+        # notion-client 버전별 호환 처리
+        try:
+            # v1 이상
+            resp = notion.databases.query(**kwargs)
+        except AttributeError:
+            # v0.x
+            resp = notion.databases.query(database_id=CONFERENCES_DB_ID, **kwargs)
+
         for page in resp["results"]:
             rt = page["properties"].get("Conference ID", {}).get("rich_text", [])
             if rt:
@@ -171,10 +179,16 @@ def upsert_conference(conf, existing_ids):
     if abstract:
         props["Abstract Deadline"]   = {"date": {"start": abstract.strftime("%Y-%m-%dT%H:%M:%S+00:00")}}
 
-    notion.pages.create(
-        parent={"database_id": CONFERENCES_DB_ID},
-        properties=props,
-    )
+    try:
+        notion.pages.create(
+            parent={"database_id": CONFERENCES_DB_ID},
+            properties=props,
+        )
+    except TypeError:
+        notion.pages.create(**{
+            "parent": {"database_id": CONFERENCES_DB_ID},
+            "properties": props,
+        })
     return "created"
 
 # ── 메인 ──────────────────────────────────────────────
