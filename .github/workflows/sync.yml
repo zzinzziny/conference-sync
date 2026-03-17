@@ -23,4 +23,5 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           CONFERENCES_DB_ID: ${{ secrets.CONFERENCES_DB_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python sync.py

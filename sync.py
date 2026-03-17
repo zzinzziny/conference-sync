@@ -21,19 +21,23 @@ notion = Client(auth=NOTION_TOKEN)
 
 # ── YAML 파싱 ──────────────────────────────────────────
 def fetch_conferences():
-    resp = requests.get(HF_API_URL, timeout=15)
+    # GitHub Token이 있으면 rate limit 5000회/시간으로 증가
+    github_token = os.environ.get("GITHUB_TOKEN", "")
+    headers = {"Authorization": f"token {github_token}"} if github_token else {}
+
+    resp = requests.get(HF_API_URL, headers=headers, timeout=15)
     resp.raise_for_status()
-    files = [f["name"] for f in resp.json() if f["name"].endswith(".yml") or f["name"].endswith(".yaml")]
+    files = [f["name"] for f in resp.json()
+             if f["name"].endswith(".yml") or f["name"].endswith(".yaml")]
     print(f"   YAML 파일 {len(files)}개 발견")
 
     conferences = []
     for fname in files:
         url = f"{HF_RAW_BASE}/{fname}"
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(url, headers=headers, timeout=10)
             if r.status_code == 200:
                 data = yaml.safe_load(r.text)
-                # 파일 하나에 단일 dict 또는 리스트 모두 처리
                 if isinstance(data, list):
                     conferences.extend(data)
                 elif isinstance(data, dict):
@@ -42,7 +46,6 @@ def fetch_conferences():
             print(f"  ⚠️ {fname} 파싱 실패: {e}")
 
     return conferences
-
 # ── 날짜 파싱 ──────────────────────────────────────────
 def parse_deadline(deadline_str, timezone_str):
     if not deadline_str or str(deadline_str).strip().upper() == "TBD":
